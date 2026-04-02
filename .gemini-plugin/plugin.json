@@ -1,0 +1,20 @@
+{
+  "name": "oh-my-gemini",
+  "version": "4.9.3",
+  "description": "Multi-agent orchestration system for Gemini Code",
+  "author": {
+    "name": "oh-my-gemini contributors"
+  },
+  "repository": "https://github.com/unoShin/oh-my-gemini",
+  "homepage": "https://github.com/unoShin/oh-my-gemini",
+  "license": "MIT",
+  "keywords": [
+    "gemini-cli",
+    "plugin",
+    "multi-agent",
+    "orchestration",
+    "automation"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

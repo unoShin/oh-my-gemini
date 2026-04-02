@@ -1,0 +1,67 @@
+﻿src/__tests__/deep-interview-provider-options.test.ts(5,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/__tests__/deep-interview-provider-options.test.ts(6,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/__tests__/delegation-enforcement-levels.test.ts(17,8): error TS2307: Cannot find module '../hooks/omg-orchestrator/index.js' or its corresponding type declarations.
+src/__tests__/delegation-enforcement-levels.test.ts(18,33): error TS2307: Cannot find module '../hooks/omg-orchestrator/audit.js' or its corresponding type declarations.
+src/cli/interop.ts(10,27): error TS2440: Import declaration conflicts with local declaration of 'isGeminiAvailable'.
+src/cli/interop.ts(77,9): error TS2451: Cannot redeclare block-scoped variable 'hasGemini'.
+src/cli/interop.ts(78,9): error TS2451: Cannot redeclare block-scoped variable 'hasGemini'.
+src/config/loader.ts(135,9): error TS1117: An object literal cannot have multiple properties with the same name.
+src/config/loader.ts(736,15): error TS1117: An object literal cannot have multiple properties with the same name.
+src/config/models.ts(51,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/constants/names.ts(31,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/features/builtin-skills/runtime-guidance.ts(4,3): error TS2300: Duplicate identifier 'gemini'.
+src/features/builtin-skills/runtime-guidance.ts(5,3): error TS2300: Duplicate identifier 'gemini'.
+src/features/builtin-skills/runtime-guidance.ts(6,3): error TS2300: Duplicate identifier 'gemini'.
+src/features/builtin-skills/runtime-guidance.ts(14,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/features/builtin-skills/runtime-guidance.ts(15,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/hooks/bridge.ts(42,8): error TS2307: Cannot find module './omg-orchestrator/index.js' or its corresponding type declarations.
+src/hooks/index.ts(197,8): error TS2307: Cannot find module './omg-orchestrator/index.js' or its corresponding type declarations.
+src/hooks/keyword-detector/index.ts(62,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/hooks/team-dispatch-hook.ts(340,9): error TS2451: Cannot redeclare block-scoped variable 'hasGeminiPromptLine'.
+src/hooks/team-dispatch-hook.ts(341,9): error TS2451: Cannot redeclare block-scoped variable 'hasGeminiPromptLine'.
+src/installer/__tests__/mcp-registry.test.ts(18,7): error TS2451: Cannot redeclare block-scoped variable 'geminiDir'.
+src/installer/__tests__/mcp-registry.test.ts(19,7): error TS2451: Cannot redeclare block-scoped variable 'geminiDir'.
+src/installer/mcp-registry.ts(25,3): error TS2300: Duplicate identifier 'geminiConfigPath'.
+src/installer/mcp-registry.ts(26,3): error TS2300: Duplicate identifier 'geminiConfigPath'.
+src/installer/mcp-registry.ts(30,3): error TS2300: Duplicate identifier 'geminiChanged'.
+src/installer/mcp-registry.ts(31,3): error TS2300: Duplicate identifier 'geminiChanged'.
+src/installer/mcp-registry.ts(36,3): error TS2300: Duplicate identifier 'geminiConfigPath'.
+src/installer/mcp-registry.ts(37,3): error TS2300: Duplicate identifier 'geminiConfigPath'.
+src/installer/mcp-registry.ts(40,3): error TS2300: Duplicate identifier 'geminiMissing'.
+src/installer/mcp-registry.ts(41,3): error TS2300: Duplicate identifier 'geminiMismatched'.
+src/installer/mcp-registry.ts(42,3): error TS2300: Duplicate identifier 'geminiMissing'.
+src/installer/mcp-registry.ts(43,3): error TS2300: Duplicate identifier 'geminiMismatched'.
+src/installer/mcp-registry.ts(453,9): error TS2451: Cannot redeclare block-scoped variable 'geminiConfigPath'.
+src/installer/mcp-registry.ts(454,9): error TS2451: Cannot redeclare block-scoped variable 'geminiConfigPath'.
+src/installer/mcp-registry.ts(457,9): error TS2451: Cannot redeclare block-scoped variable 'currentGeminiConfig'.
+src/installer/mcp-registry.ts(474,9): error TS2451: Cannot redeclare block-scoped variable 'currentGeminiConfig'.
+src/installer/mcp-registry.ts(475,49): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'string'.
+src/installer/mcp-registry.ts(491,7): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(496,7): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(518,9): error TS2451: Cannot redeclare block-scoped variable 'geminiConfigPath'.
+src/installer/mcp-registry.ts(519,9): error TS2451: Cannot redeclare block-scoped variable 'geminiConfigPath'.
+src/installer/mcp-registry.ts(525,7): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(530,7): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(531,7): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(538,9): error TS2451: Cannot redeclare block-scoped variable 'geminiEntries'.
+src/installer/mcp-registry.ts(539,9): error TS2451: Cannot redeclare block-scoped variable 'geminiEntries'.
+src/installer/mcp-registry.ts(543,9): error TS2451: Cannot redeclare block-scoped variable 'geminiMissing'.
+src/installer/mcp-registry.ts(544,9): error TS2451: Cannot redeclare block-scoped variable 'geminiMismatched'.
+src/installer/mcp-registry.ts(545,9): error TS2451: Cannot redeclare block-scoped variable 'geminiMissing'.
+src/installer/mcp-registry.ts(546,9): error TS2451: Cannot redeclare block-scoped variable 'geminiMismatched'.
+src/installer/mcp-registry.ts(565,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(570,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/installer/mcp-registry.ts(571,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/mcp/omg-tools-server.ts(8,42): error TS2307: Cannot find module '@google/gemini-agent-sdk' or its corresponding type declarations.
+src/mcp/omg-tools-server.ts(53,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/shared/types.ts(262,3): error TS2300: Duplicate identifier 'geminiModel'.
+src/shared/types.ts(263,3): error TS2300: Duplicate identifier 'geminiModel'.
+src/team/__tests__/unified-team.test.ts(46,13): error TS2451: Cannot redeclare block-scoped variable 'gemini'.
+src/team/__tests__/unified-team.test.ts(51,13): error TS2451: Cannot redeclare block-scoped variable 'gemini'.
+src/team/capabilities.ts(17,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/team/capabilities.ts(19,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/team/capabilities.ts(20,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/team/cli-detection.ts(36,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/team/cli-detection.ts(37,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/team/tmux-session.ts(665,9): error TS2451: Cannot redeclare block-scoped variable 'hasGeminiPromptLine'.
+src/team/tmux-session.ts(666,9): error TS2451: Cannot redeclare block-scoped variable 'hasGeminiPromptLine'.

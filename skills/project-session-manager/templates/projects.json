@@ -1,0 +1,19 @@
+{
+  "aliases": {
+    "omg": {
+      "repo": "unoShin/oh-my-gemini",
+      "local": "~/Workspace/oh-my-gemini",
+      "default_base": "main"
+    },
+    "gc": {
+      "repo": "google/gemini-cli",
+      "local": "~/Workspace/gemini-cli",
+      "default_base": "main"
+    }
+  },
+  "defaults": {
+    "worktree_root": "~/.psm/worktrees",
+    "cleanup_after_days": 14,
+    "auto_cleanup_merged": true
+  }
+}

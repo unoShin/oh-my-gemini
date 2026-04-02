@@ -1,0 +1,487 @@
+#!/usr/bin/env node
+/**
+ * Team MCP Server - tmux CLI worker runtime tools
+ */
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { spawn } from 'child_process';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { killWorkerPanes, killTeamSession } from '../team/tmux-session.js';
+import { validateTeamName } from '../team/team-name.js';
+import { NudgeTracker } from '../team/idle-nudge.js';
+import { clearScopedTeamState, convergeJobWithResultArtifact, isJobTerminal, } from './team-job-convergence.js';
+import { isProcessAlive } from '../platform/index.js';
+import { getGlobalOmgStatePath } from '../utils/paths.js';
+const omgTeamJobs = new Map();
+const OMG_JOBS_DIR = process.env.OMG_JOBS_DIR || getGlobalOmgStatePath('team-jobs');
+const DEPRECATION_CODE = 'deprecated_cli_only';
+const TEAM_CLI_REPLACEMENT_HINTS = {
+    omg_run_team_start: 'omg team start',
+    omg_run_team_status: 'omg team status <job_id>',
+    omg_run_team_wait: 'omg team wait <job_id>',
+    omg_run_team_cleanup: 'omg team cleanup <job_id>',
+};
+function isDeprecatedTeamToolName(name) {
+    return Object.prototype.hasOwnProperty.call(TEAM_CLI_REPLACEMENT_HINTS, name);
+}
+export function createDeprecatedCliOnlyEnvelope(toolName) {
+    return createDeprecatedCliOnlyEnvelopeWithArgs(toolName);
+}
+function quoteCliValue(value) {
+    return JSON.stringify(value);
+}
+function buildCliReplacement(toolName, args) {
+    const hasArgsObject = typeof args === 'object' && args !== null;
+    if (!hasArgsObject) {
+        return TEAM_CLI_REPLACEMENT_HINTS[toolName];
+    }
+    const parsed = (typeof args === 'object' && args !== null) ? args : {};
+    if (toolName === 'omg_run_team_start') {
+        const teamName = typeof parsed.teamName === 'string' ? parsed.teamName.trim() : '';
+        const cwd = typeof parsed.cwd === 'string' ? parsed.cwd.trim() : '';
+        const newWindow = parsed.newWindow === true;
+        const agentTypes = Array.isArray(parsed.agentTypes)
+            ? parsed.agentTypes.filter((item) => typeof item === 'string' && item.trim().length > 0)
+            : [];
+        const tasks = Array.isArray(parsed.tasks)
+            ? parsed.tasks
+                .map((task) => (typeof task === 'object' && task !== null && typeof task.description === 'string')
+                ? task.description.trim()
+                : '')
+                .filter(Boolean)
+            : [];
+        const flags = ['omg', 'team', 'start'];
+        if (teamName)
+            flags.push('--name', quoteCliValue(teamName));
+        if (cwd)
+            flags.push('--cwd', quoteCliValue(cwd));
+        if (newWindow)
+            flags.push('--new-window');
+        if (agentTypes.length > 0) {
+            const uniqueAgentTypes = new Set(agentTypes);
+            if (uniqueAgentTypes.size === 1) {
+                flags.push('--agent', quoteCliValue(agentTypes[0]), '--count', String(agentTypes.length));
+            }
+            else {
+                flags.push('--agent', quoteCliValue(agentTypes.join(',')));
+            }
+        }
+        else {
+            flags.push('--agent', '"gemini"');
+        }
+        if (tasks.length > 0) {
+            for (const task of tasks) {
+                flags.push('--task', quoteCliValue(task));
+            }
+        }
+        else {
+            flags.push('--task', '"<task>"');
+        }
+        return flags.join(' ');
+    }
+    const jobId = typeof parsed.job_id === 'string' ? parsed.job_id.trim() : '<job_id>';
+    if (toolName === 'omg_run_team_status') {
+        return `omg team status --job-id ${quoteCliValue(jobId)}`;
+    }
+    if (toolName === 'omg_run_team_wait') {
+        const timeoutMs = typeof parsed.timeout_ms === 'number' && Number.isFinite(parsed.timeout_ms)
+            ? ` --timeout-ms ${Math.floor(parsed.timeout_ms)}`
+            : '';
+        return `omg team wait --job-id ${quoteCliValue(jobId)}${timeoutMs}`;
+    }
+    if (toolName === 'omg_run_team_cleanup') {
+        const graceMs = typeof parsed.grace_ms === 'number' && Number.isFinite(parsed.grace_ms)
+            ? ` --grace-ms ${Math.floor(parsed.grace_ms)}`
+            : '';
+        return `omg team cleanup --job-id ${quoteCliValue(jobId)}${graceMs}`;
+    }
+    return TEAM_CLI_REPLACEMENT_HINTS[toolName];
+}
+export function createDeprecatedCliOnlyEnvelopeWithArgs(toolName, args) {
+    const cliReplacement = buildCliReplacement(toolName, args);
+    return {
+        content: [{
+                type: 'text',
+                text: JSON.stringify({
+                    code: DEPRECATION_CODE,
+                    tool: toolName,
+                    message: 'Legacy team MCP runtime tools are deprecated. Use the omg team CLI instead.',
+                    cli_replacement: cliReplacement,
+                }),
+            }],
+        isError: true,
+    };
+}
+function persistJob(jobId, job) {
+    try {
+        if (!existsSync(OMG_JOBS_DIR))
+            mkdirSync(OMG_JOBS_DIR, { recursive: true });
+        writeFileSync(join(OMG_JOBS_DIR, `${jobId}.json`), JSON.stringify(job), 'utf-8');
+    }
+    catch { /* best-effort */ }
+}
+function loadJobFromDisk(jobId) {
+    try {
+        return JSON.parse(readFileSync(join(OMG_JOBS_DIR, `${jobId}.json`), 'utf-8'));
+    }
+    catch {
+        return undefined;
+    }
+}
+async function loadPaneIds(jobId) {
+    const p = join(OMG_JOBS_DIR, `${jobId}-panes.json`);
+    try {
+        return JSON.parse(await readFile(p, 'utf-8'));
+    }
+    catch {
+        return null;
+    }
+}
+function validateJobId(job_id) {
+    if (!/^omg-[a-z0-9]{1,16}$/.test(job_id)) {
+        throw new Error(`Invalid job_id: "${job_id}". Must match /^omg-[a-z0-9]{1,16}$/`);
+    }
+}
+function saveJobState(jobId, job) {
+    omgTeamJobs.set(jobId, job);
+    persistJob(jobId, job);
+    return job;
+}
+function makeJobResponse(jobId, job, extra = {}) {
+    const elapsed = ((Date.now() - job.startedAt) / 1000).toFixed(1);
+    const out = { jobId, status: job.status, elapsedSeconds: elapsed, ...extra };
+    if (job.result) {
+        try {
+            out.result = JSON.parse(job.result);
+        }
+        catch {
+            out.result = job.result;
+        }
+    }
+    if (job.stderr)
+        out.stderr = job.stderr;
+    return { content: [{ type: 'text', text: JSON.stringify(out) }] };
+}
+const startSchema = z.object({
+    teamName: z.string().describe('Slug name for the team (e.g. "auth-review")'),
+    agentTypes: z.array(z.string()).describe('Agent type per worker: "gemini", "gemini", or "gemini"'),
+    tasks: z.array(z.object({
+        subject: z.string().describe('Brief task title'),
+        description: z.string().describe('Full task description'),
+    })).describe('Tasks to distribute to workers'),
+    cwd: z.string().describe('Working directory (absolute path)'),
+    newWindow: z.boolean().optional().describe('Spawn workers in a dedicated tmux window instead of splitting the current window'),
+});
+const statusSchema = z.object({
+    job_id: z.string().describe('Job ID returned by omg_run_team_start'),
+});
+const waitSchema = z.object({
+    job_id: z.string().describe('Job ID returned by omg_run_team_start'),
+    timeout_ms: z.number().optional().describe('Maximum wait time in ms (default: 300000, max: 3600000)'),
+    nudge_delay_ms: z.number().optional().describe('Milliseconds a pane must be idle before nudging (default: 30000)'),
+    nudge_max_count: z.number().optional().describe('Maximum nudges per pane (default: 3)'),
+    nudge_message: z.string().optional().describe('Message sent as nudge (default: "Continue working on your assigned task and report concrete progress (not ACK-only).")'),
+});
+const cleanupSchema = z.object({
+    job_id: z.string().describe('Job ID returned by omg_run_team_start'),
+    grace_ms: z.number().optional().describe('Grace period in ms before force-killing panes (default: 10000)'),
+});
+async function handleStart(args) {
+    if (typeof args === 'object'
+        && args !== null
+        && Object.prototype.hasOwnProperty.call(args, 'timeoutSeconds')) {
+        throw new Error('omg_run_team_start no longer accepts timeoutSeconds. Remove timeoutSeconds and use omg_run_team_wait timeout_ms to limit the wait call only (workers keep running until completion or explicit omg_run_team_cleanup).');
+    }
+    const input = startSchema.parse(args);
+    validateTeamName(input.teamName);
+    const jobId = `omg-${Date.now().toString(36)}`;
+    const runtimeCliPath = join(__dirname, 'runtime-cli.cjs');
+    const job = { status: 'running', startedAt: Date.now(), teamName: input.teamName, cwd: input.cwd };
+    omgTeamJobs.set(jobId, job);
+    const child = spawn('node', [runtimeCliPath], {
+        env: { ...process.env, OMG_JOB_ID: jobId, OMG_JOBS_DIR },
+        stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    job.pid = child.pid;
+    persistJob(jobId, job);
+    child.stdin.write(JSON.stringify(input));
+    child.stdin.end();
+    const outChunks = [];
+    const errChunks = [];
+    child.stdout.on('data', (c) => outChunks.push(c));
+    child.stderr.on('data', (c) => errChunks.push(c));
+    child.on('close', (code) => {
+        const stdout = Buffer.concat(outChunks).toString('utf-8').trim();
+        const stderr = Buffer.concat(errChunks).toString('utf-8').trim();
+        if (stdout) {
+            try {
+                const parsed = JSON.parse(stdout);
+                const s = parsed.status;
+                if (job.status === 'running') {
+                    job.status = (s === 'completed' || s === 'failed') ? s : 'failed';
+                }
+            }
+            catch {
+                if (job.status === 'running')
+                    job.status = 'failed';
+            }
+            job.result = stdout;
+        }
+        if (job.status === 'running') {
+            if (code === 0)
+                job.status = 'completed';
+            else
+                job.status = 'failed';
+        }
+        if (stderr)
+            job.stderr = stderr;
+        persistJob(jobId, job);
+    });
+    child.on('error', (err) => {
+        job.status = 'failed';
+        job.stderr = `spawn error: ${err.message}`;
+        persistJob(jobId, job);
+    });
+    return {
+        content: [{ type: 'text', text: JSON.stringify({ jobId, pid: job.pid, message: 'Team started. Poll with omg_run_team_status.' }) }],
+    };
+}
+export async function handleStatus(args) {
+    const { job_id } = statusSchema.parse(args);
+    validateJobId(job_id);
+    let job = omgTeamJobs.get(job_id) ?? loadJobFromDisk(job_id);
+    if (!job) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: `No job found: ${job_id}` }) }] };
+    }
+    // Precedence: artifact terminal > job.status/result > pid liveness.
+    const artifactConvergence = convergeJobWithResultArtifact(job, job_id, OMG_JOBS_DIR);
+    if (artifactConvergence.changed) {
+        job = saveJobState(job_id, artifactConvergence.job);
+        return makeJobResponse(job_id, job);
+    }
+    if (isJobTerminal(job)) {
+        return makeJobResponse(job_id, job);
+    }
+    if (job.pid != null && !isProcessAlive(job.pid)) {
+        job = saveJobState(job_id, {
+            ...job,
+            status: 'failed',
+            result: job.result ?? JSON.stringify({ error: 'Process no longer alive (MCP restart?)' }),
+        });
+    }
+    return makeJobResponse(job_id, job);
+}
+export async function handleWait(args) {
+    const { job_id, timeout_ms = 300_000, nudge_delay_ms, nudge_max_count, nudge_message } = waitSchema.parse(args);
+    validateJobId(job_id);
+    const deadline = Date.now() + Math.min(timeout_ms, 3_600_000);
+    let pollDelay = 500;
+    const nudgeTracker = new NudgeTracker({
+        ...(nudge_delay_ms != null ? { delayMs: nudge_delay_ms } : {}),
+        ...(nudge_max_count != null ? { maxCount: nudge_max_count } : {}),
+        ...(nudge_message != null ? { message: nudge_message } : {}),
+    });
+    while (Date.now() < deadline) {
+        let job = omgTeamJobs.get(job_id) ?? loadJobFromDisk(job_id);
+        if (!job) {
+            return { content: [{ type: 'text', text: JSON.stringify({ error: `No job found: ${job_id}` }) }] };
+        }
+        // Precedence: artifact terminal > job.status/result > pid liveness > timeout.
+        const artifactConvergence = convergeJobWithResultArtifact(job, job_id, OMG_JOBS_DIR);
+        if (artifactConvergence.changed) {
+            job = saveJobState(job_id, artifactConvergence.job);
+            const out = makeJobResponse(job_id, job);
+            if (nudgeTracker.totalNudges > 0) {
+                const payload = JSON.parse(out.content[0].text);
+                payload.nudges = nudgeTracker.getSummary();
+                out.content[0].text = JSON.stringify(payload);
+            }
+            return out;
+        }
+        if (isJobTerminal(job)) {
+            const out = makeJobResponse(job_id, job);
+            if (nudgeTracker.totalNudges > 0) {
+                const payload = JSON.parse(out.content[0].text);
+                payload.nudges = nudgeTracker.getSummary();
+                out.content[0].text = JSON.stringify(payload);
+            }
+            return out;
+        }
+        if (job.pid != null && !isProcessAlive(job.pid)) {
+            job = saveJobState(job_id, {
+                ...job,
+                status: 'failed',
+                result: job.result ?? JSON.stringify({ error: 'Process no longer alive (MCP restart?)' }),
+            });
+            const out = makeJobResponse(job_id, job, { error: 'Process no longer alive (MCP restart?)' });
+            if (nudgeTracker.totalNudges > 0) {
+                const payload = JSON.parse(out.content[0].text);
+                payload.nudges = nudgeTracker.getSummary();
+                out.content[0].text = JSON.stringify(payload);
+            }
+            return out;
+        }
+        await new Promise(r => setTimeout(r, pollDelay));
+        pollDelay = Math.min(Math.floor(pollDelay * 1.5), 2000);
+        try {
+            const panes = await loadPaneIds(job_id);
+            if (panes?.paneIds?.length) {
+                await nudgeTracker.checkAndNudge(panes.paneIds, panes.leaderPaneId, job.teamName ?? '');
+            }
+        }
+        catch { /* best-effort */ }
+    }
+    const startedAt = omgTeamJobs.get(job_id)?.startedAt ?? Date.now();
+    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+    const timeoutOut = {
+        error: `Timed out waiting for job ${job_id} after ${(timeout_ms / 1000).toFixed(0)}s — workers are still running; call omg_run_team_wait again to keep waiting or omg_run_team_cleanup to stop them`,
+        jobId: job_id,
+        status: 'running',
+        elapsedSeconds: elapsed,
+    };
+    if (nudgeTracker.totalNudges > 0)
+        timeoutOut.nudges = nudgeTracker.getSummary();
+    return { content: [{ type: 'text', text: JSON.stringify(timeoutOut) }] };
+}
+export async function handleCleanup(args) {
+    const { job_id, grace_ms } = cleanupSchema.parse(args);
+    validateJobId(job_id);
+    const job = omgTeamJobs.get(job_id) ?? loadJobFromDisk(job_id);
+    if (!job)
+        return { content: [{ type: 'text', text: `Job ${job_id} not found` }] };
+    const panes = await loadPaneIds(job_id);
+    let paneCleanupMessage = 'No pane IDs recorded for this job — pane cleanup skipped.';
+    if (panes?.sessionName && (panes.ownsWindow === true || !panes.sessionName.includes(':'))) {
+        const sessionMode = panes.ownsWindow === true
+            ? (panes.sessionName.includes(':') ? 'dedicated-window' : 'detached-session')
+            : 'detached-session';
+        await killTeamSession(panes.sessionName, panes.paneIds, panes.leaderPaneId, { sessionMode });
+        paneCleanupMessage = panes.ownsWindow
+            ? 'Cleaned up team tmux window.'
+            : `Cleaned up ${panes.paneIds.length} worker pane(s).`;
+    }
+    else if (panes?.paneIds?.length) {
+        await killWorkerPanes({
+            paneIds: panes.paneIds,
+            leaderPaneId: panes.leaderPaneId,
+            teamName: job.teamName ?? '',
+            cwd: job.cwd ?? '',
+            graceMs: grace_ms ?? 10_000,
+        });
+        paneCleanupMessage = `Cleaned up ${panes.paneIds.length} worker pane(s).`;
+    }
+    job.cleanedUpAt = new Date().toISOString();
+    persistJob(job_id, job);
+    const cleanupOutcome = clearScopedTeamState(job);
+    return { content: [{ type: 'text', text: `${paneCleanupMessage} ${cleanupOutcome}` }] };
+}
+const TOOLS = [
+    {
+        name: 'omg_run_team_start',
+        description: '[DEPRECATED] CLI-only migration required. This tool no longer executes; use `omg team start`.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                teamName: { type: 'string', description: 'Slug name for the team' },
+                agentTypes: { type: 'array', items: { type: 'string' }, description: '"gemini", "gemini", or "gemini" per worker' },
+                tasks: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            subject: { type: 'string' },
+                            description: { type: 'string' },
+                        },
+                        required: ['subject', 'description'],
+                    },
+                    description: 'Tasks to distribute to workers',
+                },
+                cwd: { type: 'string', description: 'Working directory (absolute path)' },
+                newWindow: { type: 'boolean', description: 'Spawn workers in a dedicated tmux window instead of splitting the current window' },
+            },
+            required: ['teamName', 'agentTypes', 'tasks', 'cwd'],
+        },
+    },
+    {
+        name: 'omg_run_team_status',
+        description: '[DEPRECATED] CLI-only migration required. This tool no longer executes; use `omg team status <job_id>`.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string', description: 'Job ID returned by omg_run_team_start' },
+            },
+            required: ['job_id'],
+        },
+    },
+    {
+        name: 'omg_run_team_wait',
+        description: '[DEPRECATED] CLI-only migration required. This tool no longer executes; use `omg team wait <job_id>`.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string', description: 'Job ID returned by omg_run_team_start' },
+                timeout_ms: { type: 'number', description: 'Maximum wait time in ms (default: 300000, max: 3600000)' },
+                nudge_delay_ms: { type: 'number', description: 'Milliseconds a pane must be idle before nudging (default: 30000)' },
+                nudge_max_count: { type: 'number', description: 'Maximum nudges per pane (default: 3)' },
+                nudge_message: { type: 'string', description: 'Message sent as nudge (default: "Continue working on your assigned task and report concrete progress (not ACK-only).")' },
+            },
+            required: ['job_id'],
+        },
+    },
+    {
+        name: 'omg_run_team_cleanup',
+        description: '[DEPRECATED] CLI-only migration required. This tool no longer executes; use `omg team cleanup <job_id>`.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string', description: 'Job ID returned by omg_run_team_start' },
+                grace_ms: { type: 'number', description: 'Grace period in ms before force-killing panes (default: 10000)' },
+            },
+            required: ['job_id'],
+        },
+    },
+];
+const server = new Server({ name: 'team', version: '1.0.0' }, { capabilities: { tools: {} } });
+server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    // Dispatch live handlers first. The deprecation guard below currently overlaps
+    // with these same tool names but is kept as a safety net for future tool
+    // renames — if a tool name is removed from this dispatch block, the
+    // deprecation guard will catch stale callers and return a migration hint.
+    try {
+        if (name === 'omg_run_team_start')
+            return await handleStart(args ?? {});
+        if (name === 'omg_run_team_status')
+            return await handleStatus(args ?? {});
+        if (name === 'omg_run_team_wait')
+            return await handleWait(args ?? {});
+        if (name === 'omg_run_team_cleanup')
+            return await handleCleanup(args ?? {});
+    }
+    catch (error) {
+        return { content: [{ type: 'text', text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+    if (isDeprecatedTeamToolName(name)) {
+        return createDeprecatedCliOnlyEnvelopeWithArgs(name, args);
+    }
+    return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
+});
+async function main() {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('OMG Team MCP Server running on stdio');
+}
+if (process.env.OMG_TEAM_SERVER_DISABLE_AUTOSTART !== '1' && process.env.NODE_ENV !== 'test') {
+    main().catch((error) => {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    });
+}
+//# sourceMappingURL=team-server.js.map

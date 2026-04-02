@@ -1,0 +1,46 @@
+import { isCliAvailable, type CliAgentType } from '../../team/model-contract.js';
+
+export interface SkillRuntimeAvailability {
+  gemini: boolean;
+}
+
+export function detectSkillRuntimeAvailability(
+  detector: (agentType: CliAgentType) => boolean = isCliAvailable,
+): SkillRuntimeAvailability {
+  return {
+    gemini: detector('gemini'),
+  };
+}
+
+function normalizeSkillName(skillName: string): string {
+  return skillName.trim().toLowerCase();
+}
+
+function renderDeepInterviewRuntimeGuidance(availability: SkillRuntimeAvailability): string {
+  if (!availability.gemini) {
+    return '';
+  }
+
+  return [
+    '## Provider-Aware Execution Recommendations',
+    'When Phase 5 presents post-interview execution choices, keep the Gemini-only defaults above and add these Gemini variants because Gemini CLI is available:',
+    '',
+    '- `/ralplan --architect gemini "<spec or task>"` — Gemini handles the architect pass; best for implementation-heavy design review; higher cost than Gemini-only ralplan.',
+    '- `/ralplan --critic gemini "<spec or task>"` — Gemini handles the critic pass; cheaper than moving the full loop off Gemini; strong second-opinion review.',
+    '- `/ralph --critic gemini "<spec or task>"` — Ralph still executes normally, but final verification goes through the Gemini critic; smallest multi-provider upgrade.',
+    '',
+    'If Gemini becomes unavailable, briefly note that and fall back to the Gemini-only recommendations already listed in Phase 5.',
+  ].join('\n');
+}
+
+export function renderSkillRuntimeGuidance(
+  skillName: string,
+  availability?: SkillRuntimeAvailability,
+): string {
+  switch (normalizeSkillName(skillName)) {
+    case 'deep-interview':
+      return renderDeepInterviewRuntimeGuidance(availability ?? detectSkillRuntimeAvailability());
+    default:
+      return '';
+  }
+}

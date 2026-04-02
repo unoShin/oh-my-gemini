@@ -1,0 +1,1 @@
+{"version":3,"file":"mock-sdk.js","sourceRoot":"","sources":["../../src/mcp/mock-sdk.ts"],"names":[],"mappings":"AAAA,MAAM,UAAU,kBAAkB,CAAC,OAAY;IAC7C,OAAO,EAAE,CAAC;AACZ,CAAC;AAED,MAAM,UAAU,IAAI,CAAC,IAAY,EAAE,WAAmB,EAAE,MAAW,EAAE,OAAY;IAC/E,OAAO,EAAE,IAAI,EAAE,WAAW,EAAE,MAAM,EAAE,OAAO,EAAE,CAAC;AAChD,CAAC"}

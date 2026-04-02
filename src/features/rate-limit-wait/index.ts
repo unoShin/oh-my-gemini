@@ -1,0 +1,58 @@
+/**
+ * Rate Limit Wait Feature
+ *
+ * Auto-resume Gemini Code sessions when rate limits reset.
+ *
+ * Usage:
+ *   omg wait status         - Show current rate limit status
+ *   omg wait daemon start   - Start the background daemon
+ *   omg wait daemon stop    - Stop the daemon
+ *   omg wait detect         - Scan for blocked Gemini Code sessions
+ */
+
+// Type exports
+export type {
+  RateLimitStatus,
+  TmuxPane,
+  PaneAnalysisResult,
+  BlockedPane,
+  DaemonState,
+  DaemonConfig,
+  ResumeResult,
+  DaemonCommand,
+  DaemonResponse,
+} from './types.js';
+
+// Rate limit monitor exports
+export {
+  checkRateLimitStatus,
+  formatTimeUntilReset,
+  formatRateLimitStatus,
+  isRateLimitStatusDegraded,
+  shouldMonitorBlockedPanes,
+} from './rate-limit-monitor.js';
+
+// tmux detector exports
+export {
+  isTmuxAvailable,
+  isInsideTmux,
+  listTmuxPanes,
+  capturePaneContent,
+  analyzePaneContent,
+  scanForBlockedPanes,
+  sendResumeSequence,
+  sendToPane,
+  formatBlockedPanesSummary,
+} from './tmux-detector.js';
+
+// Daemon exports
+export {
+  readDaemonState,
+  isDaemonRunning,
+  startDaemon,
+  runDaemonForeground,
+  stopDaemon,
+  getDaemonStatus,
+  detectBlockedPanes,
+  formatDaemonState,
+} from './daemon.js';
