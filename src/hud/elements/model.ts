@@ -10,18 +10,13 @@ import type { ModelFormat } from '../types.js';
 
 /**
  * Extract version from a model ID string.
- * E.g., 'gemini-ultra-4-6-20260205' -> '4.6'
- *       'gemini-pro-4-6-20260217' -> '4.6'
- *       'gemini-flash-4-5-20251001' -> '4.5'
+ * E.g., 'gemini-1.5-pro' -> '1.5'
+ *       'gemini-1.5-flash' -> '1.5'
  */
 function extractVersion(modelId: string): string | null {
-  // Match hyphenated ID patterns like ultra-4-6, pro-4-5, flash-4-5
-  const idMatch = modelId.match(/(?:ultra|pro|flash)-(\d+)-(\d+)/i);
-  if (idMatch) return `${idMatch[1]}.${idMatch[2]}`;
-
-  // Match display name patterns like "Pro 4.5", "Ultra 4.6"
-  const displayMatch = modelId.match(/(?:ultra|pro|flash)\s+(\d+(?:\.\d+)?)/i);
-  if (displayMatch) return displayMatch[1];
+  // Match Gemini 1.5, 2.0, etc.
+  const idMatch = modelId.match(/gemini-(\d+(?:\.\d+)?)/i);
+  if (idMatch) return idMatch[1];
 
   return null;
 }

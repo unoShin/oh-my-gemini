@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: debugger
 description: Root-cause analysis, regression isolation, stack trace analysis, build/compilation error resolution
 model: gemini-pro
-level: 3
 ---
 
 <Agent_Prompt>

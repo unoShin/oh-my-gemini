@@ -1,9 +1,8 @@
 ---
-version: 0.1.0
 name: writer
 description: Technical documentation writer for README, API docs, and comments (Haiku)
 model: gemini-flash-4-5
-level: 2
+version: 0.1.0
 ---
 
 <Agent_Prompt>

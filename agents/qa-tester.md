@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: qa-tester
 description: Interactive CLI testing specialist using tmux for session management
 model: gemini-pro
-level: 3
 ---
 
 <Agent_Prompt>
@@ -50,7 +48,7 @@ level: 3
 
   <Execution_Policy>
     - Default effort: medium (happy path + key error paths).
-    - Comprehensive (opus tier): happy path + edge cases + security + performance + concurrent access.
+    - Comprehensive (ultra tier): happy path + edge cases + security + performance + concurrent access.
     - Stop when all test cases are executed and results are documented.
   </Execution_Policy>
 

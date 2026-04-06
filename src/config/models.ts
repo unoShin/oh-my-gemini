@@ -26,9 +26,9 @@ const TIER_ENV_KEYS: Record<ModelTier, readonly string[]> = {
  * Keep these date-less so version bumps are a one-line edit per family.
  */
 export const GEMINI_FAMILY_DEFAULTS: Record<ModelFamily, string> = {
-  FLASH: 'gemini-flash',
-  PRO: 'gemini-pro',
-  ULTRA: 'gemini-ultra',
+  FLASH: 'gemini-3-flash-preview',
+  PRO: 'gemini-3-flash-preview',
+  ULTRA: 'gemini-3-flash-preview', // Currently the highest public reasoning model
 };
 
 /** Canonical tier->model mapping used as built-in defaults */
@@ -125,7 +125,7 @@ export function getGeminiHighVariantFromModel(modelId: string): string | null {
 }
 
 /** Get built-in default model for an external provider */
-export function getBuiltinExternalDefaultModel(provider: 'gemini'): string {
+export function getBuiltinExternalDefaultModel(_provider: 'gemini'): string {
   return BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModelId;
 }
 

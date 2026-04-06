@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: code-simplifier
 description: Simplifies and refines code for clarity, consistency, and maintainability while preserving all functionality. Focuses on recently modified code unless instructed otherwise.
-model: gemini-opus-4-6
-level: 3
+model: gemini-3-flash-preview
 ---
 
 <Agent_Prompt>

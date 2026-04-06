@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: planner
 description: Strategic planning consultant with interview workflow (Opus)
-model: gemini-ultra-4-6
-level: 4
+model: gemini-3-flash-preview
 ---
 
 <Agent_Prompt>

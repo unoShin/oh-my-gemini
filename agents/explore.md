@@ -1,10 +1,7 @@
 ---
-version: 0.1.0
 name: explore
 description: Codebase search specialist for finding files and code patterns
 model: gemini-haiku-4-5
-level: 3
-disallowedTools: Write, Edit
 ---
 
 <Agent_Prompt>

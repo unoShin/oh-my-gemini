@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "omg-analyst": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "analyst"]
+    },
+    "omg-architect": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "architect"]
+    },
+    "omg-code-reviewer": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "code-reviewer"]
+    },
+    "omg-debugger": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "debugger"]
+    },
+    "omg-executor": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "executor"]
+    },
+    "omg-planner": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "planner"]
+    },
+    "omg-qa-tester": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "qa-tester"]
+    },
+    "omg-security-reviewer": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "security-reviewer"]
+    },
+    "omg-test-engineer": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "test-engineer"]
+    },
+    "omg-verifier": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "verifier"]
+    },
+    "omg-writer": {
+      "command": "node",
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs", "writer"]
+    }
+  }
+}

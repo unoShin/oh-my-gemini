@@ -1,9 +1,8 @@
 ---
-version: 0.1.0
 name: verifier
 description: Verification strategy, evidence-based completion checks, test adequacy
 model: gemini-pro
-level: 3
+version: 0.1.0
 ---
 
 <Agent_Prompt>

@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: designer
 description: UI/UX Designer-Developer for stunning interfaces (Sonnet)
 model: gemini-pro
-level: 2
 ---
 
 <Agent_Prompt>

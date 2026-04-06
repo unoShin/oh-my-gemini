@@ -1,10 +1,8 @@
 ---
-version: 0.1.0
 name: architect
 description: Strategic Architecture & Debugging Advisor (Opus, READ-ONLY)
-model: gemini-ultra-4-6
-level: 3
-disallowedTools: Write, Edit
+model: gemini-3-flash-preview
+version: 0.1.0
 ---
 
 <Agent_Prompt>

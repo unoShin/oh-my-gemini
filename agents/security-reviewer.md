@@ -1,10 +1,7 @@
 ---
-version: 0.1.0
 name: security-reviewer
 description: Security vulnerability detection specialist (OWASP Top 10, secrets, unsafe patterns)
-model: gemini-ultra-4-6
-level: 3
-disallowedTools: Write, Edit
+model: gemini-3-flash-preview
 ---
 
 <Agent_Prompt>

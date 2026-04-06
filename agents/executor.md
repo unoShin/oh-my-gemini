@@ -1,9 +1,7 @@
 ---
-version: 0.1.0
 name: executor
 description: Focused task executor for implementation work (Sonnet)
 model: gemini-pro
-level: 2
 ---
 
 <Agent_Prompt>

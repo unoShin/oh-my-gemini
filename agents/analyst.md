@@ -1,10 +1,7 @@
 ---
-version: 0.1.0
 name: analyst
 description: Pre-planning consultant for requirements analysis (Opus)
-model: gemini-ultra-4-6
-level: 3
-disallowedTools: Write, Edit
+model: gemini-3-flash-preview
 ---
 
 <Agent_Prompt>

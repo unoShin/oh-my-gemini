@@ -2,7 +2,7 @@
   "mcpServers": {
     "t": {
       "command": "node",
-      "args": ["${GEMINI_PLUGIN_ROOT}/bridge/mcp-server.cjs"]
+      "args": ["/home/unowhat/project/oh-my-gemini/bridge/mcp-server.cjs"]
     }
   }
 }

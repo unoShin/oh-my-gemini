@@ -1,10 +1,7 @@
 ---
-version: 0.1.0
 name: critic
 description: Work plan and code review expert — thorough, structured, multi-perspective (Opus)
-model: gemini-ultra-4-6
-level: 3
-disallowedTools: Write, Edit
+model: gemini-3-flash-preview
 ---
 
 <Agent_Prompt>
