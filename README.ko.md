@@ -61,11 +61,17 @@ omg team 1:ultra "데이터베이스 스키마를 설계해줘"
 - **`ulw` (ultrawork)**: 에이전트 최대 병렬 작업 모드를 켭니다.
 - **`ralplan`**: 단 한 줄의 코드를 작성하기 전, 에이전트들끼리 협의하여 구조적인 계획을 수립합니다.
 
-### 똑똑한 모델 라우팅
-oh-my-gemini는 각 작업의 성격에 맞춰 가장 빠르고 비용 대비 효율적인 모델을 자동 선택합니다:
-- **Flash**: 단순 검색, 오타 수정 및 가벼운 git 작업.
-- **Pro**: 일반적인 개발, 테스트 작문 및 디버깅.
-- **Ultra**: 복잡한 시스템 설계, 장기적인 추론 및 아키텍처 리뷰.
+### 똑똑한 모델 라우팅 (v0.1.0 Humble Reset)
+oh-my-gemini는 작업의 성격에 맞춰 적절한 모델 티어를 자동 선택합니다. 이제 더 이상 특정 모델 버전에 얽매이지 않고, 현재 사용자의 환경에서 가장 잘 작동하는 모델을 의도(Intention) 기반으로 라우팅합니다:
+- **Flash (LOW)**: `gemini-3-flash` 계열. 단순 검색, 오타 수정 및 가벼운 git 작업.
+- **Pro (MEDIUM)**: `gemini-3-pro` 계열. 일반적인 개발, 테스트 작문 및 디버깅.
+- **Ultra (HIGH)**: `gemini-3-pro-high` 등. 복잡한 시스템 설계, 장기적인 추론 및 아키텍처 리뷰.
+
+> **💡 모델 오버라이드 (Model Override)**
+> 특정 모델을 강제하고 싶다면 환경 변수를 사용하세요:
+> `export OMG_MODEL_HIGH=gemini-2.0-pro-exp`
+> `export OMG_MODEL_MEDIUM=gemini-1.5-pro`
+> `export OMG_MODEL_LOW=gemini-1.5-flash`
 
 ### HUD 상태 표시줄
 에이전트들이 현재 어떤 작업을, 얼마나 했는지 상태바(HUD)를 통해 실시간으로 모니터링하세요.
